@@ -14,12 +14,9 @@ bool dfsHelper(BasicGraph& graph, Vertex* start, Vertex* end, Vector<Vertex*>& p
 void tracePath(Vertex* start, Vertex* end, Vector<Vertex*>& path);
 void reverseVector(Vector<Vertex*>& path);
 Vector<Vertex*> aStarHelper(BasicGraph& graph, Vertex* start, Vertex* end, bool useHeuristic);
+void mergeVertexSet(Edge* e, Vector<Set<Vertex *> > &clusters, Set<Edge *> &mst);
 
 Vector<Vertex*> depthFirstSearch(BasicGraph& graph, Vertex* start, Vertex* end) {
-    // TODO: implement this function; remove these comments
-    //       (The function body code provided below is just a stub that returns
-    //        an empty vector so that the overall project will compile.
-    //        You should remove that code and replace it with your implementation.)
     Vector<Vertex*> path;
     graph.resetData();
     dfsHelper(graph, start, end, path);
@@ -73,10 +70,6 @@ void reverseVector(Vector<Vertex*>& path){
 }
 
 Vector<Vertex*> breadthFirstSearch(BasicGraph& graph, Vertex* start, Vertex* end) {
-    // TODO: implement this function; remove these comments
-    //       (The function body code provided below is just a stub that returns
-    //        an empty vector so that the overall project will compile.
-    //        You should remove that code and replace it with your implementation.)
     graph.resetData();
 
     Vector<Vertex*> path;
@@ -100,13 +93,12 @@ Vector<Vertex*> breadthFirstSearch(BasicGraph& graph, Vertex* start, Vertex* end
         }
 
         for (Edge* e : curr->edges) {
-            if(e->finish->visited) continue;
-
-            e->finish->previous = curr;
-            e->finish->visited = true;
-            queue.enqueue(e->finish);
-            e->finish->setColor(YELLOW);
-
+            if(!e->finish->visited) {
+                e->finish->previous = curr;
+                e->finish->visited = true;
+                queue.enqueue(e->finish);
+                e->finish->setColor(YELLOW);
+            }
         }
     }
 
@@ -114,11 +106,11 @@ Vector<Vertex*> breadthFirstSearch(BasicGraph& graph, Vertex* start, Vertex* end
 }
 
 Vector<Vertex*> dijkstrasAlgorithm(BasicGraph& graph, Vertex* start, Vertex* end) {
-    // TODO: implement this function; remove these comments
-    //       (The function body code provided below is just a stub that returns
-    //        an empty vector so that the overall project will compile.
-    //        You should remove that code and replace it with your implementation.)
     return aStarHelper(graph, start, end, false);
+}
+
+Vector<Vertex*> aStar(BasicGraph& graph, Vertex* start, Vertex* end) {
+    return aStarHelper(graph, start, end, true);
 }
 
 
@@ -166,15 +158,39 @@ Vector<Vertex*> aStarHelper(BasicGraph& graph, Vertex* start, Vertex* end, bool 
     return path;
 }
 
-Vector<Vertex*> aStar(BasicGraph& graph, Vertex* start, Vertex* end) {
-    return aStarHelper(graph, start, end, true);
+void mergeVertexSet(Edge* e, Vector<Set<Vertex*> >& clusters, Set<Edge*>& mst){
+    int start, end;
+    for(int i=0; i<clusters.size(); i++){
+        if(clusters[i].contains(e->start)) start=i;
+        if(clusters[i].contains(e->finish)) end = i;
+    }
+
+    if(start==end) return;
+
+    clusters[start] += clusters[end];
+    clusters.remove(end);
+    mst.add(e);
 }
 
 Set<Edge*> kruskal(BasicGraph& graph) {
-    // TODO: implement this function; remove these comments
-    //       (The function body code provided below is just a stub that returns
-    //        an empty set so that the overall project will compile.
-    //        You should remove that code and replace it with your implementation.)
     Set<Edge*> mst;
+    Vector<Set<Vertex*> > clusters;
+
+    for(Vertex* v: graph.getVertexSet()){
+        Set<Vertex*> s;
+        s.add(v);
+        clusters.add(s);
+    }
+
+    PriorityQueue<Edge*> pqueue;
+    for(Edge* e : graph.getEdgeSet()){
+        pqueue.enqueue(e, e->cost);
+    }
+
+    while(!pqueue.isEmpty()&&clusters.size()>=2){
+        Edge* e = pqueue.dequeue();
+        mergeVertexSet(e, clusters, mst);
+    }
+
     return mst;
 }
